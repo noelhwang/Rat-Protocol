@@ -3,16 +3,18 @@
 
 #include "arduino.h"
 
-
-
-
 //comparisons are (A>B, B>C, C>D, D>E)
 #define NUM_TRAINING_COMPARISONS   4
 #define NUM_SCENTS  10
 
+//9 scents, 2 solenoids per scent
+#define NUM_SOLENOIDS 18
 
 enum{
-  NULL_CORRIDOR,
+  
+};
+
+enum{
   LEFT_CORRIDOR,
   RIGHT_CORRIDOR
 };
@@ -40,6 +42,29 @@ enum{
   SCENT_Z,
   SCENT_Y
 };
+
+enum{
+  SCENT_E_LEFT,
+  SCENT_E_RIGHT,
+  SCENT_D_LEFT, 
+  SCENT_D_RIGHT,
+  SCENT_C_LEFT,
+  SCENT_C_RIGHT,
+  SCENT_B_LEFT,
+  SCENT_B_RIGHT,
+  SCENT_A_LEFT, 
+  SCENT_A_RIGHT, 
+  SCENT_X_LEFT, 
+  SCENT_X_RIGHT, 
+  SCENT_W_LEFT, 
+  SCENT_W_RIGHT, 
+  SCENT_Z_LEFT, 
+  SCENT_Z_RIGHT, 
+  SCENT_Y_RIGHT, 
+  SCENT_Y_LEFT
+};
+
+
 
 //experiment types
 enum{
@@ -98,7 +123,7 @@ struct APP_DATA {
   BEAM_BREAK_DATA leftBeamBreak, rightBeamBreak, startBeamBreak;
   EXPERIMENT_PARAMS params; //experiment params passed to micro from matlab
 };
-
+void turnOnSolenoid(uint8_t scent, uint8_t side, uint8_t state);
 void systemRunTasks();
 bool isValidParameters();
 void waitingForTrialStart(void);

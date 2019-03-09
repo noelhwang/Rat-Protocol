@@ -3,6 +3,12 @@
 #include "arduino.h"
 
 APP_DATA appData;
+uint8_t solenoidPin[NUM_SOLENOIDS];
+
+void setSolenoid(uint8_t scent, uint8_t side, uint8_t state){
+  digitalWrite( solenoidPin[(2*scent + side)] ,state);
+}
+
 
 void systemRunTasks(void){
   
@@ -27,6 +33,7 @@ void systemRunTasks(void){
 
 bool isValidParameters(){
   //checks if system tasks are valid
+  return true; 
 }
 
 
@@ -65,8 +72,7 @@ void waitingForChoice(void){
     case TRAINING_SINGLE_SCENT:
 
     uint8_t corridor; 
-    corridor = NULL_CORRIDOR;
-      //check to see which corridor the scent is assigned to
+    //check to see which corridor the scent is assigned to
       if(appData.params.scentLeft == NO_SCENT){
         //scent is on the right corridor
         corridor = RIGHT_CORRIDOR;
@@ -79,10 +85,11 @@ void waitingForChoice(void){
       if(corridor == LEFT_CORRIDOR){
         //TODO open scent specific left corridor solenoid  
         analogWrite(SCENT_LEFT_FAN_PWM_OUT, appData.params.leftFanPWM);
+        setSolenoid(appData.params.scentLeft, LEFT_CORRIDOR, HIGH);
       }
       else{
-        analogWrite(SCENT_RIGHT_FAN_PWM_OUT, appData.params.rightFanPWM);
-
+        analogWrite(SCENT_RIGHT_FAN_PWM_OUT, appData.params.rightFanPWM); 
+        setSolenoid(appData.params.scentRight, RIGHT_CORRIDOR, HIGH);
         //TODO open scent specific right corridor solenoid
       }            
       break;
