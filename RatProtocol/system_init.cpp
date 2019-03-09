@@ -8,10 +8,14 @@ void initTimers(){
   //TODO
 }
 void initIOs(void){
-  //TODO
+  //TODO initialize output pins 
 }
 void initSteppers(void){
   //TODO
+}
+
+void initInterrupts(void){
+  //initialize interrupts
 }
 
 void systemInit(void){

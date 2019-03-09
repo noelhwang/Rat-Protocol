@@ -28,13 +28,13 @@ enum{
 
 struct EXPERIMENT_PARAMS {
 
-  uint16_t scentLeft;
+  uint16_t scentLeft; 
   uint16_t scentRight;
   uint16_t successProbability;
   uint32_t startDelayTime;
   uint32_t rewardDelayTime;
-  uint32_t punishmentDelayTime;
-  bool bSingleScent;
+  uint32_t punishmentDelayTime; 
+  bool bSingleScent; //true if only single scent presented
 };
 
 //system state variables
