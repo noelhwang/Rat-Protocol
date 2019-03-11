@@ -118,19 +118,15 @@ void waitForChoiceTwoScent(){
   while(!isBeamBreakBroken(appData.leftBeamBreak) || !isBeamBreakBroken(appData.leftBeamBreak)){
     //wait until either beambreak is broken. the broken beam flag will be set if either trips
   }
-  //choose reward if applicable
-  
   if(isCorrectCorridor()){
     appData.bTrialSuccess = true;
     if(appData.params.type == TRAINING_SINGLE_SCENT){
       if(appData.params.bRewardCorrectScent){
-            //dispense food
-          
+            //dispense food         
       }
     }
     else{
       //dispense food
-  
     }
   }
   else{
@@ -147,7 +143,6 @@ void systemReset(){
   resetBeamBreak(appData.rightBeamBreak);
   resetBeamBreak(appData.startBeamBreak);  
 }
-
 
 bool isBeamBreakBroken(BEAM_BREAK_DATA beamBreak){
   if(beamBreak.bSet){ 
@@ -189,19 +184,26 @@ bool isCorrectCorridor(){
 //Interrupt Service Routines
 void generic_trigger_isr(uint8_t pin, BEAM_BREAK_DATA beamBreak){
   if(!digitalRead(pin)){ //rat enters for first time. assumes the sensor is active high
+    digitalWrite(13, HIGH);
     beamBreak.tStart = millis(); //record the start time
     beamBreak.bSet = true; //set flag saying rat has entered
   }
   else{
+    digitalWrite(13, LOW);
     //rat leaves beam break after entering
     beamBreak.bSet = false;    
   }
 }
 
 void isrLeftBeamBroken(void){
-  if(appData.startBeamBreak.bSet){ //don't do anything unless the trial has started
-    generic_trigger_isr(BEAM_BREAK_LEFT_IN, appData.leftBeamBreak);  
+
+  if(!digitalRead(BEAM_BREAK_LEFT_IN)){
+    digitalWrite(13, HIGH);
   }
+  else{
+    digitalWrite(13, LOW);
+  }
+  
 }
 void isrRightBeamBroken(void){
   if(appData.startBeamBreak.bSet){ //don't do anything unless the trial has started
@@ -209,7 +211,12 @@ void isrRightBeamBroken(void){
   }
 }
 void isrStartBeamBroken(void){
-  generic_trigger_isr(BEAM_BREAK_START_IN, appData.startBeamBreak);  
+  if(!digitalRead(BEAM_BREAK_START_IN)){
+    digitalWrite(13, HIGH);
+  }
+  else{
+    digitalWrite(13, LOW);
+  }
 }
 
 void resetBeamBreak(BEAM_BREAK_DATA beamBreak){

@@ -117,12 +117,9 @@ struct EXPERIMENT_PARAMS {
   uint32_t leftFanPWM;
   uint32_t rightFanPWM;
   uint32_t mainFanPWM;
-  
   bool bRewardCorrectScent; //true if dispensing reward with correct scent choice
   uint8_t scentRewardProbability; //scents probabilities 
-
   //only relevant in single scent trials
-
   //time required to break the respective beam breaks in milliseconds
   uint32_t tBeamBreak;
   uint32_t tWaitTime; //time between trials
@@ -136,6 +133,7 @@ struct APP_DATA {
   BEAM_BREAK_DATA leftBeamBreak, rightBeamBreak, startBeamBreak;
   EXPERIMENT_PARAMS params; //experiment params passed to micro from matlab
 };
+
 void setSolenoid(uint8_t scent, uint8_t side, uint8_t state);
 void systemRunTasks();
 bool isValidParameters();

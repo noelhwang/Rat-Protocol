@@ -32,9 +32,12 @@ void initIOs(void){
   digitalWrite(SCENT_SOLENOID_D_RIGHT_OUT, HIGH);
 
   
-  pinMode(BEAM_BREAK_START_IN, INPUT);
-  pinMode(BEAM_BREAK_LEFT_IN, INPUT);
-  pinMode(BEAM_BREAK_RIGHT_IN, INPUT);
+  pinMode(BEAM_BREAK_START_IN, INPUT_PULLUP);
+  pinMode(BEAM_BREAK_LEFT_IN, INPUT_PULLUP);
+  pinMode(BEAM_BREAK_RIGHT_IN, INPUT_PULLUP);
+
+  pinMode(13, OUTPUT);//debug led
+  digitalWrite(13, LOW);
   
 }
 void initSteppers(void){

@@ -104,11 +104,13 @@ void dumpState(void){
 
 void testBeamBreak(){
   bBeamBreakTest = true;
+  appData.params.tBeamBreak = 500; //default 500ms bem break time 
   Serial.println("Starting Beam Break Test");
   attachInterrupt(digitalPinToInterrupt(BEAM_BREAK_START_IN), isrLeftBeamBroken, CHANGE);
   attachInterrupt(digitalPinToInterrupt(BEAM_BREAK_LEFT_IN), isrRightBeamBroken, CHANGE);
   attachInterrupt(digitalPinToInterrupt(BEAM_BREAK_RIGHT_IN), isrRightBeamBroken, CHANGE);  
 
+  
   while(bBeamBreakTest){
     matlab.readSerial(); //wait for end command
     if(appData.startBeamBreak.bSet){

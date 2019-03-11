@@ -13,7 +13,7 @@
 
 
 //beam break sensors. NEED TO BE ON PCINT or INT pins for interrupts!
-#define BEAM_BREAK_START_IN 10
+#define BEAM_BREAK_START_IN 2 //for debug
 #define BEAM_BREAK_LEFT_IN  11  
 #define BEAM_BREAK_RIGHT_IN 12
 
