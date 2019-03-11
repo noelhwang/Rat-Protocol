@@ -1,15 +1,19 @@
 #ifndef SYSTEM_H
 #define SYSTEM_H
 
+#define DEBUG
 #include "arduino.h"
 
 //comparisons are (A>B, B>C, C>D, D>E)
 #define NUM_TRAINING_COMPARISONS   4
 #define NUM_SCENTS  10
 
-//9 scents, 2 solenoids per scent
-#define NUM_SOLENOIDS 18
 
+//9 scents, 2 solenoids per scent, no scent is scent 10
+#define NUM_SOLENOIDS 20
+
+#define NUM_PARAMS  10
+#define NUM_SOLENOID_PARAMS 3
 enum{
   
 };
@@ -44,6 +48,8 @@ enum{
 };
 
 enum{
+  SCENT_NONE_LEFT,
+  SCENT_NONE_RIGHT,
   SCENT_E_LEFT,
   SCENT_E_RIGHT,
   SCENT_D_LEFT, 
@@ -64,8 +70,6 @@ enum{
   SCENT_Y_LEFT
 };
 
-
-
 //experiment types
 enum{
   TRAINING_SINGLE_SCENT,
@@ -79,51 +83,60 @@ enum{
   STATE_WAITING_FOR_TRIAL_PARAMS,
   STATE_WAITING_FOR_TRIAL_START,
   STATE_WAITING_FOR_CHOICE,
-  STATE_WAITING_BETWEEN_TRIALS
-};
-
-
-struct SCENT_SCORE_BOARD{
-  uint16_t numTrials; //how many total sequences have been run
-  uint16_t numSuccesses[NUM_TRAINING_COMPARISONS];
+  STATE_WAITING_BETWEEN_TRIALS,
+  STATE_TRIAL_COMPLETE
 };
 
 //beam break struct 
 struct BEAM_BREAK_DATA  {
   unsigned long tStart;
-  bool bSet;
+  bool bSet; //true if waiting for rat to exceed time limit
+  bool bBroken; //true if rat has exceeded time limit
+};
+
+enum{
+  TYPE, 
+  SCENT_LEFT, 
+  SCENT_RIGHT,
+  LEFT_FAN_PWM,
+  RIGHT_FAN_PWM,
+  MAIN_FAN_PWM,
+  B_REWARD_CORRECT_SCENT,
+  SCENT_REWARD_PROBABILITY,
+  T_BEAM_BREAK,
+  T_WAIT_TIME
 };
 
 struct EXPERIMENT_PARAMS {  
-  uint16_t type; //experiment type  
+  uint32_t type; //experiment type  
   
   //scent assigned to left and right
-  uint16_t scentLeft; 
-  uint16_t scentRight;
+  uint32_t scentLeft; 
+  uint32_t scentRight;
 
-  uint16_t leftFanPWM;
-  uint16_t rightFanPWM;
-  uint16_t mainFanPWM;
+  uint32_t leftFanPWM;
+  uint32_t rightFanPWM;
+  uint32_t mainFanPWM;
   
-  //probability that scent will yield success
-  uint16_t successProbability; //probability of current reward scent
+  bool bRewardCorrectScent; //true if dispensing reward with correct scent choice
+  uint8_t scentRewardProbability; //scents probabilities 
+
+  //only relevant in single scent trials
 
   //time required to break the respective beam breaks in milliseconds
-  uint32_t tBeamBreakStart;
-  uint32_t tBeamBreakReward;
-  uint32_t tBeamBreakPunishment;
-  float scentRewardProbability[NUM_SCENTS]; //scents probabilities 
+  uint32_t tBeamBreak;
+  uint32_t tWaitTime; //time between trials
   
 };
 
 //system state variables
 struct APP_DATA {
+  bool bTrialSuccess;
   uint16_t state;//system state as defined in enumeration
-  SCENT_SCORE_BOARD scoreBoard; //trial successes
   BEAM_BREAK_DATA leftBeamBreak, rightBeamBreak, startBeamBreak;
   EXPERIMENT_PARAMS params; //experiment params passed to micro from matlab
 };
-void turnOnSolenoid(uint8_t scent, uint8_t side, uint8_t state);
+void setSolenoid(uint8_t scent, uint8_t side, uint8_t state);
 void systemRunTasks();
 bool isValidParameters();
 void waitingForTrialStart(void);
@@ -132,6 +145,14 @@ void waitingBetweenTrials(void);
 void isrLeftBeamBroken(void);
 void isrRightBeamBroken(void);
 void isrStartBeamBroken(void);
+bool isBeamBreakBroken(BEAM_BREAK_DATA beamBreak);
 void systemReset(); //reinitialize state variables
+void waitForChoiceSingleScent(void);
+void waitForChoiceTwoScent(void);
+bool isCorrectCorridor(void);
+void trialComplete(void);
+
+void resetBeamBreak(BEAM_BREAK_DATA beamBreak);
+void resetParams(EXPERIMENT_PARAMS params);
 
 #endif

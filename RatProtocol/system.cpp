@@ -1,12 +1,39 @@
 #include "system.h"
 #include "system_config.h"
 #include "arduino.h"
+#include "utilities.h"
 
 APP_DATA appData;
-uint8_t solenoidPin[NUM_SOLENOIDS];
+//solenoid pin lookup table 
+uint8_t solenoidPins[] = {
+  SCENT_SOLENOID_NONE_LEFT_OUT, SCENT_SOLENOID_NONE_RIGHT_OUT,
+  SCENT_SOLENOID_E_LEFT_OUT, SCENT_SOLENOID_E_RIGHT_OUT, SCENT_SOLENOID_D_LEFT_OUT, SCENT_SOLENOID_D_RIGHT_OUT, 
+  SCENT_SOLENOID_C_LEFT_OUT, SCENT_SOLENOID_C_RIGHT_OUT, SCENT_SOLENOID_B_LEFT_OUT, SCENT_SOLENOID_B_RIGHT_OUT, 
+  SCENT_SOLENOID_A_LEFT_OUT, SCENT_SOLENOID_A_RIGHT_OUT, SCENT_SOLENOID_X_LEFT_OUT, SCENT_SOLENOID_X_RIGHT_OUT,
+  SCENT_SOLENOID_W_LEFT_OUT, SCENT_SOLENOID_W_RIGHT_OUT, SCENT_SOLENOID_Z_LEFT_OUT, SCENT_SOLENOID_Z_RIGHT_OUT,
+  SCENT_SOLENOID_Y_LEFT_OUT, SCENT_SOLENOID_Y_RIGHT_OUT
+};
+
+
 
 void setSolenoid(uint8_t scent, uint8_t side, uint8_t state){
-  digitalWrite( solenoidPin[(2*scent + side)] ,state);
+  
+  //solenoid drivers are active low, so invert state
+  Serial.print("Scent: ");
+  Serial.print(scent);
+  Serial.print(" Side: ");
+  Serial.print(side);
+  Serial.print(" State: ");
+  Serial.print(state);
+  
+  uint8_t pinIdx = 2*scent + side;
+  Serial.println("Pin index: " + String(pinIdx));
+  
+  Serial.print("Setting Solenoid on Pin ");
+  Serial.print(solenoidPins[(2*(scent) + side)]);
+  Serial.print(" to state:  ");
+  Serial.println(!state);
+  digitalWrite(solenoidPins[(2*(scent) + side)] ,!state);
 }
 
 
@@ -15,13 +42,15 @@ void systemRunTasks(void){
   switch (appData.state) {
     case STATE_WAITING_FOR_TRIAL_PARAMS:
         //listen on serial port for trial parameters
-    break;
+      break;
     case STATE_WAITING_FOR_TRIAL_START:
         waitingForTrialStart();
-    break;
+      break;
     case STATE_WAITING_FOR_CHOICE:
       waitingForChoice();
-    break;
+      break;
+    case STATE_TRIAL_COMPLETE:
+      trialComplete();
     case STATE_WAITING_BETWEEN_TRIALS:
       waitingBetweenTrials();
     break;
@@ -40,21 +69,13 @@ bool isValidParameters(){
 void waitingForTrialStart(void){
   #ifdef DEBUG
   Serial.println("Waiting for Trial to Start");
-  
   #endif 
   attachInterrupt(digitalPinToInterrupt(BEAM_BREAK_START_IN), isrStartBeamBroken, CHANGE);
   digitalWrite(START_LED_OUT, HIGH); //turn on start LED
-  
-  unsigned long currentTime;  
-  if(appData.startBeamBreak.bSet){ //if the rat's entered
-    //if the beam's been broken, check the time difference between start time and now
-    currentTime = millis();
-    if(currentTime - appData.startBeamBreak.tStart > appData.params.tBeamBreakStart){
-      appData.state = STATE_WAITING_FOR_CHOICE; //success
-      Serial.println("RAT HAS STARTED TRIAL");
-    }
+  while(!isBeamBreakBroken(appData.startBeamBreak)){
+    
   }
-
+  appData.state = STATE_WAITING_FOR_CHOICE;
 }
 
 void waitingForChoice(void){
@@ -68,73 +89,106 @@ void waitingForChoice(void){
   attachInterrupt(digitalPinToInterrupt(BEAM_BREAK_RIGHT_IN), isrLeftBeamBroken, CHANGE);
   attachInterrupt(digitalPinToInterrupt(BEAM_BREAK_LEFT_IN), isrRightBeamBroken, CHANGE);
   
-  switch  (appData.params.type){
-    case TRAINING_SINGLE_SCENT:
-
-    uint8_t corridor; 
-    //check to see which corridor the scent is assigned to
-      if(appData.params.scentLeft == NO_SCENT){
-        //scent is on the right corridor
-        corridor = RIGHT_CORRIDOR;
-      }
-      else{
-        //scent is on the left corridor
-        corridor = LEFT_CORRIDOR;
-      }
-      
-      if(corridor == LEFT_CORRIDOR){
-        //TODO open scent specific left corridor solenoid  
-        analogWrite(SCENT_LEFT_FAN_PWM_OUT, appData.params.leftFanPWM);
-        setSolenoid(appData.params.scentLeft, LEFT_CORRIDOR, HIGH);
-      }
-      else{
-        analogWrite(SCENT_RIGHT_FAN_PWM_OUT, appData.params.rightFanPWM); 
-        setSolenoid(appData.params.scentRight, RIGHT_CORRIDOR, HIGH);
-        //TODO open scent specific right corridor solenoid
-      }            
-      break;
-    case TRAINING_COMPARISON_SCENTS:
-      
-      break;
-    case EXPERIMENT_COMPARISONS:
-      
-      break;
-    case EXPERIMENT_NOVEL_SCENTS:
-    
-      break;
-    default:
-      //never end up here
-      break;
-  }
+  waitForChoiceTwoScent();  
+ 
 }
 
 void waitingBetweenTrials(){
+  //un-arm beam breaks for corridors, turn off all the leds  
   detachInterrupt(digitalPinToInterrupt(BEAM_BREAK_LEFT_IN));
   detachInterrupt(digitalPinToInterrupt(BEAM_BREAK_RIGHT_IN));
   digitalWrite(CORRIDOR_CHOICE_LED_OUT, LOW);
   digitalWrite(START_LED_OUT, LOW);
-  switch(appData.params.type){
-    case TRAINING_SINGLE_SCENT:
-          
-      break;
-    case TRAINING_COMPARISON_SCENTS:
-    
-      break;
-    case EXPERIMENT_NOVEL_SCENTS:
-    
-      break;
-    default:
-      //never end up here
-      break;
-  }
 }
+
+void trialComplete(void){
+  Serial.println("Trial Complete");
+  logHeader();
+  logResults();
+  //done with trial, send back results
+}
+
+void waitForChoiceTwoScent(){
+  //turn the fans on, open scent solenoids
+  analogWrite(SCENT_RIGHT_FAN_PWM_OUT, appData.params.rightFanPWM);
+  analogWrite(SCENT_LEFT_FAN_PWM_OUT, appData.params.leftFanPWM);
+  setSolenoid(appData.params.scentLeft, LEFT_CORRIDOR, HIGH);
+  setSolenoid(appData.params.scentRight, RIGHT_CORRIDOR, HIGH);
+  
+  while(!isBeamBreakBroken(appData.leftBeamBreak) || !isBeamBreakBroken(appData.leftBeamBreak)){
+    //wait until either beambreak is broken. the broken beam flag will be set if either trips
+  }
+  //choose reward if applicable
+  
+  if(isCorrectCorridor()){
+    appData.bTrialSuccess = true;
+    if(appData.params.type == TRAINING_SINGLE_SCENT){
+      if(appData.params.bRewardCorrectScent){
+            //dispense food
+          
+      }
+    }
+    else{
+      //dispense food
+  
+    }
+  }
+  else{
+    appData.bTrialSuccess = false;
+  }
+  appData.state = STATE_WAITING_FOR_TRIAL_PARAMS; 
+}
+
 void systemReset(){
+  //TODO set all the vars in appData to orignal state
   appData.state = STATE_WAITING_FOR_TRIAL_PARAMS;
+  appData.bTrialSuccess = false;
+  resetBeamBreak(appData.leftBeamBreak);
+  resetBeamBreak(appData.rightBeamBreak);
+  resetBeamBreak(appData.startBeamBreak);  
+}
+
+
+bool isBeamBreakBroken(BEAM_BREAK_DATA beamBreak){
+  if(beamBreak.bSet){ 
+    if(millis() - beamBreak.tStart > appData.params.tBeamBreak){
+      beamBreak.bBroken = true;
+      return true;
+    }
+    else{
+      return false;
+    }
+  }
+  return false;
+}
+
+bool isCorrectCorridor(){
+  if(appData.params.scentLeft > appData.params.scentRight){
+    //in the case that you assign a scent with higher priority on the left
+    if(appData.leftBeamBreak.bBroken){
+      return true;
+    }
+    else{
+      return false;
+    }
+  }
+  else if (appData.params.scentLeft < appData.params.scentRight){
+    if(appData.rightBeamBreak.bBroken){
+      return true;
+    }
+    else{
+      return false;
+    }
+  }
+  else{ //you should never end up here
+    return false;
+    }
+  
 }
 
 //Interrupt Service Routines
 void generic_trigger_isr(uint8_t pin, BEAM_BREAK_DATA beamBreak){
-  if(digitalRead(pin)){ //rat enters for first time. assumes the sensor is active high
+  if(!digitalRead(pin)){ //rat enters for first time. assumes the sensor is active high
     beamBreak.tStart = millis(); //record the start time
     beamBreak.bSet = true; //set flag saying rat has entered
   }
@@ -158,4 +212,9 @@ void isrStartBeamBroken(void){
   generic_trigger_isr(BEAM_BREAK_START_IN, appData.startBeamBreak);  
 }
 
+void resetBeamBreak(BEAM_BREAK_DATA beamBreak){
+  beamBreak.tStart = 0;
+  beamBreak.bSet = false; //true if waiting for rat to exceed time limit
+  beamBreak.bBroken = false; //true if rat has exceeded time limit
+}
 
