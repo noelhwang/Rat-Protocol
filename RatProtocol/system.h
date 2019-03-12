@@ -135,6 +135,7 @@ struct APP_DATA {
 };
 
 void setSolenoid(uint8_t scent, uint8_t side, uint8_t state);
+void setSolenoidPin(uint8_t pin, uint8_t state);
 void systemRunTasks();
 bool isValidParameters();
 void waitingForTrialStart(void);

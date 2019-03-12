@@ -14,7 +14,9 @@ uint8_t solenoidPins[] = {
   SCENT_SOLENOID_Y_LEFT_OUT, SCENT_SOLENOID_Y_RIGHT_OUT
 };
 
-
+void setSolenoidPin(uint8_t pin, uint8_t state){
+  digitalWrite(pin, state);
+}
 
 void setSolenoid(uint8_t scent, uint8_t side, uint8_t state){
   
@@ -181,47 +183,47 @@ bool isCorrectCorridor(){
   
 }
 
-//Interrupt Service Routines
-void generic_trigger_isr(uint8_t pin, BEAM_BREAK_DATA beamBreak){
-  if(!digitalRead(pin)){ //rat enters for first time. assumes the sensor is active high
+
+void isrLeftBeamBroken(void){
+  if(appData.leftBeamBreak.bSet){ //don't do anything unless the trial has started
+    if(!digitalRead(BEAM_BREAK_LEFT_IN)){ //rat enters for first time. assumes the sensor is active high
+      digitalWrite(13, HIGH);
+      appData.leftBeamBreak.tStart = millis(); //record the start time
+      appData.leftBeamBreak.bSet = true; //set flag saying rat has entered
+      }
+    else{
+      digitalWrite(13, LOW);
+      //rat leaves beam break after entering
+      appData.leftBeamBreak.bSet = false;    
+    }
+  }
+}
+
+void isrRightBeamBroken(void){
+  if(appData.startBeamBreak.bSet){ //don't do anything unless the trial has started
+      if(!digitalRead(BEAM_BREAK_RIGHT_IN)){ //rat enters for first time. assumes the sensor is active high
+        digitalWrite(13, HIGH);
+        appData.rightBeamBreak.tStart = millis(); //record the start time
+        appData.rightBeamBreak.bSet = true; //set flag saying rat has entered
+        }
+      else{
+        digitalWrite(13, LOW);
+        //rat leaves beam break after entering
+        appData.rightBeamBreak.bSet = false;    
+      }
+  }
+}
+
+void isrStartBeamBroken(void){
+  if(!digitalRead(BEAM_BREAK_START_IN)){ //rat enters for first time. assumes the sensor is active high
     digitalWrite(13, HIGH);
-    beamBreak.tStart = millis(); //record the start time
-    beamBreak.bSet = true; //set flag saying rat has entered
+    appData.startBeamBreak.tStart = millis(); //record the start time
+    appData.startBeamBreak.bSet = true; //set flag saying rat has entered
   }
   else{
     digitalWrite(13, LOW);
     //rat leaves beam break after entering
-    beamBreak.bSet = false;    
+    appData.startBeamBreak.bSet = false;    
   }
-}
-
-void isrLeftBeamBroken(void){
-
-  if(!digitalRead(BEAM_BREAK_LEFT_IN)){
-    digitalWrite(13, HIGH);
-  }
-  else{
-    digitalWrite(13, LOW);
-  }
-  
-}
-void isrRightBeamBroken(void){
-  if(appData.startBeamBreak.bSet){ //don't do anything unless the trial has started
-    generic_trigger_isr(BEAM_BREAK_RIGHT_IN, appData.rightBeamBreak);
-  }
-}
-void isrStartBeamBroken(void){
-  if(!digitalRead(BEAM_BREAK_START_IN)){
-    digitalWrite(13, HIGH);
-  }
-  else{
-    digitalWrite(13, LOW);
-  }
-}
-
-void resetBeamBreak(BEAM_BREAK_DATA beamBreak){
-  beamBreak.tStart = 0;
-  beamBreak.bSet = false; //true if waiting for rat to exceed time limit
-  beamBreak.bBroken = false; //true if rat has exceeded time limit
 }
 

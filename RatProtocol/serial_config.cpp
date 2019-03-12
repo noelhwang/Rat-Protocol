@@ -75,6 +75,22 @@ void stopExperiment(void){
   ack();  
 }
 
+void testSolenoidPin(void){
+
+  char *arg;
+   uint8_t params[2];
+   for(int iParam = 0; iParam < 2; iParam++){
+    arg=matlab.next();  
+    if (arg != NULL){
+      params[iParam] = atoi(arg);
+    }
+   }
+  Serial.println("Testing Solenoid");
+ setSolenoidPin(params[0], params[1]);
+ 
+
+}
+
 void testSolenoid(void){
 
    char *arg;
@@ -106,10 +122,11 @@ void testBeamBreak(){
   bBeamBreakTest = true;
   appData.params.tBeamBreak = 500; //default 500ms bem break time 
   Serial.println("Starting Beam Break Test");
-  attachInterrupt(digitalPinToInterrupt(BEAM_BREAK_START_IN), isrLeftBeamBroken, CHANGE);
-  attachInterrupt(digitalPinToInterrupt(BEAM_BREAK_LEFT_IN), isrRightBeamBroken, CHANGE);
+  
+  attachInterrupt(digitalPinToInterrupt(BEAM_BREAK_START_IN), isrStartBeamBroken, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(BEAM_BREAK_LEFT_IN), isrLeftBeamBroken, CHANGE);
   attachInterrupt(digitalPinToInterrupt(BEAM_BREAK_RIGHT_IN), isrRightBeamBroken, CHANGE);  
-
+  
   
   while(bBeamBreakTest){
     matlab.readSerial(); //wait for end command
@@ -145,6 +162,7 @@ void initCommands(void){
   matlab.addCommand("BRK", testBeamBreak);
   matlab.addCommand("ENDTEST", stopBeamBreakTest);// stop beam break test
   matlab.addCommand("MEM", dumpState); //dumps appData states
+  matlab.addCommand("SLT", testSolenoidPin);
   
   matlab.addDefaultHandler(nak); //not 
 }
